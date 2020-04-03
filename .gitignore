@@ -1,0 +1,13 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+
+*.Rproj
+
+venv
+*.pyc
+.DS_Store
+.env
+
+covid_api.sqlite

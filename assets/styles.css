@@ -1,0 +1,33 @@
+body {
+	font-family: Calibri Light, sans-serif;
+}
+
+h1, h2, h3, h4 {
+	color: #559;
+}
+
+.titulo {
+	
+}
+
+.holder {
+	width: 100%;
+	display: block;
+	padding: 10px;
+}
+
+.hold-drops {
+	width: 40%;
+	display: inline-block;
+	margin-right: 10px;
+}
+
+.slider {
+	display:block;
+	width: 75%;
+}
+
+.plot {
+	display: block;
+	width: 90%;
+}
