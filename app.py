@@ -15,7 +15,7 @@ server = app.server
 requests_cache.install_cache(cache_name='covid_api', backend='sqlite', expire_after=3600)
 
 
-def crear_df(clave):
+def crear_df(clave, pob):
   pais_json = requests.get(url_base + clave).json()
   pais = pd.DataFrame.from_dict(pais_json['result'], orient='index')
   pais = pais.rename(columns={'confirmed':'Casos', 'deaths':'Muertes', 'recovered':'Recuperados'})
@@ -23,25 +23,36 @@ def crear_df(clave):
   pais['Fecha'] = pais.index
   pais['Dia'] = pais['Fecha'].rank()
   pais['Pais'] = clave
+  pais = pd.merge(pais, pob, left_on='Pais', right_on='alfa3')
   return(pais)
 
 
 url_base = 'https://covidapi.info/api/v1/country/'
 opciones = [
-  {'label': u'México', 'value': 'MEX'},
-  {'label': 'Estados Unidos', 'value': 'USA'},
-  {'label': 'Argentina', 'value': 'ARG'},
-  {'label': 'Italia', 'value': 'ITA'},
-  {'label': u'España', 'value': 'ESP'}
+  {'label':u'México', 'value':'MEX'},
+  {'label':'Estados Unidos', 'value':'USA'},
+  {'label':'Argentina', 'value':'ARG'},
+  {'label':'Brasil', 'value':'BRA'},
+  {'label':'Chile', 'value':'CHL'},
+  {'label':'Colombia' , 'value':'COL'},
+  {'label':u'España', 'value':'ESP'},
+  {'label':'Italia', 'value':'ITA'},
+  {'label':'Reino Unido' , 'value':'GBR'}
 ]
 
-metricas = [{'label':i, 'value':i} for i in ['Casos', 'Muertes', 'Recuperados']]
+pob = pd.read_csv('poblacion.csv')[['alfa3', 'pob_cienmiles']]
 
-paises = pd.concat([crear_df(i['value']) for  i in opciones])
+metricas_nom = ['Casos', 'Muertes', 'Recuperados'] 
+
+metricas = [{'label':i, 'value':i} for i in metricas_nom]
+
+
+paises = pd.concat([crear_df(i['value'], pob) for  i in opciones])
 dia_min = int(paises['Dia'].min())
 dia_max = int(paises['Dia'].max())
 marcas = {i:str(i) for i in range(10, dia_max, 10)}
 marcas.update([(1, '1'), (dia_max, str(dia_max))])
+
 
 app.layout = html.Div([
     html.Div([
@@ -54,8 +65,9 @@ app.layout = html.Div([
         html.H4(children = 'Filtrar por país'),
         dcc.Dropdown(
           id='paises-drop',
-          options=opciones,
-          value=['MEX'],
+          placeholder=u'Elige un país',
+          options=opciones, 
+          value=['MEX', 'ARG', 'CHL'],
           multi=True
         )], 
       className='hold-drops'
@@ -92,7 +104,8 @@ app.layout = html.Div([
     ),
     
     html.Div([
-      dcc.Graph(id='plot-principal', className='plot')
+      dcc.Graph(id='plot-principal', className='plot'),
+      dcc.Graph(id='plot-cienmiles', className='plot')
     ],
     className='holder'
     ),
@@ -101,12 +114,19 @@ app.layout = html.Div([
 )
 
 
-def crear_traces(fechas, claves, metrica):
+def crear_traces(fechas, claves, metrica, escienmiles):
   traces=[]
+  
   
   for i in claves: 
     paises_df = paises[paises['Dia'].between(fechas[0], fechas[1])]
     paises_df = paises_df[paises_df['Pais'].isin([i])]
+      
+    if escienmiles:
+      paises_df[metrica] = paises_df[metrica] / paises_df['pob_cienmiles'].unique()
+      paises_df[metrica] = round(paises_df[metrica], 2)
+      nombre = i + ' por cien mil habitantes'
+    
     parte = {'x':paises_df['Dia'], 'y':paises_df[metrica], 'mode': 'lines-markers', 'name':i}
     traces.append(parte)
   
@@ -123,9 +143,24 @@ def crear_traces(fechas, claves, metrica):
   ]  
 )
 def update_cliente(fechas, claves, metrica):
-  traces=crear_traces(fechas, claves, metrica)
-  cuerpo={'data': traces, 'layout':{'title': metrica}}
+  traces=crear_traces(fechas, claves, metrica, escienmiles=False)
+  cuerpo={'data': traces, 'layout':{'title': metrica + ' totales'}}
   return cuerpo
+
+
+@app.callback(
+    Output('plot-cienmiles', 'figure'),
+  [
+    Input('fecha-slider', 'value'),
+    Input('paises-drop', 'value'),
+    Input('metrica-drop', 'value')
+  ]  
+)
+def update_cliente(fechas, claves, metrica):
+  traces=crear_traces(fechas, claves, metrica, escienmiles=True)
+  cuerpo={'data': traces, 'layout':{'title': metrica + ' por cien mil habitantes'}}
+  return cuerpo
+
 
 
 if __name__ == '__main__':
