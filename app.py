@@ -10,6 +10,7 @@ from dash.dependencies import Input, Output
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 server = app.server
+app.title = u'Métricas de COVID-19'
 
 
 requests_cache.install_cache(cache_name='covid_api', backend='sqlite', expire_after=3600)
@@ -20,6 +21,9 @@ def crear_df(clave, pob):
   pais = pd.DataFrame.from_dict(pais_json['result'], orient='index')
   pais = pais.rename(columns={'confirmed':'Casos', 'deaths':'Muertes', 'recovered':'Recuperados'})
   pais = pais[pais['Casos'] > 0]
+  pais['Casos nuevos'] = pais['Casos'].diff()
+  pais['Muertes nuevas'] = pais['Muertes'].diff()
+  pais['Recuperados nuevos'] = pais['Recuperados'].diff()
   pais['Fecha'] = pais.index
   pais['Dia'] = pais['Fecha'].rank()
   pais['Pais'] = clave
@@ -42,7 +46,10 @@ opciones = [
 
 pob = pd.read_csv('poblacion.csv')[['alfa3', 'pob_cienmiles']]
 
-metricas_nom = ['Casos', 'Muertes', 'Recuperados'] 
+metricas_nom = [
+  'Casos', 'Muertes', 'Recuperados', 
+  'Casos nuevos', 'Muertes nuevas', 'Recuperados nuevos'
+] 
 
 metricas = [{'label':i, 'value':i} for i in metricas_nom]
 
@@ -118,7 +125,9 @@ app.layout = html.Div([
       html.Br(),
       html.P('Datos extaidos a través de '),
       html.A('CovidAPI', href = 'https://covidapi.info/'),
-      html.P('.')
+      html.P('.'),
+      html.Br(),
+      html.A('Repositorio en Github.', href='https://github.com/jboscomendoza/dashboard-covid-19')
     ],
     className='holder')
     
