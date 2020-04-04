@@ -109,6 +109,20 @@ app.layout = html.Div([
     ],
     className='holder'
     ),
+    
+    html.Div([
+      html.P('Fuente de datos: '),
+      html.A('2019 Novel Coronavirus COVID-19 (2019-nCoV) Data Repository by Johns Hopkins CSSE', 
+        href='https://github.com/CSSEGISandData/COVID-19'),
+      html.P(' (actualizado diariamente).'),
+      html.Br(),
+      html.P('Datos extaidos a través de '),
+      html.A('CovidAPI', href = 'https://covidapi.info/'),
+      html.P('.')
+    ],
+    className='holder')
+    
+    
   ],
   className='holder'
 )
