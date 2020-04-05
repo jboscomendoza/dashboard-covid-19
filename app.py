@@ -7,6 +7,7 @@ import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output
 
+
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 server = app.server
@@ -21,9 +22,9 @@ def crear_df(clave, pob):
   pais = pd.DataFrame.from_dict(pais_json['result'], orient='index')
   pais = pais.rename(columns={'confirmed':'Casos', 'deaths':'Muertes', 'recovered':'Recuperados'})
   pais = pais[pais['Casos'] > 0]
-  pais['Casos nuevos'] = pais['Casos'].diff()
-  pais['Muertes nuevas'] = pais['Muertes'].diff()
-  pais['Recuperados nuevos'] = pais['Recuperados'].diff()
+  pais[['Casos nuevos', 'Muertes nuevas', 'Recuperados nuevos']] = pais[['Casos', 'Muertes', 'Recuperados']].diff()
+  # pais['Muertes nuevas'] = pais['Muertes'].diff()
+  # pais['Recuperados nuevos'] = pais['Recuperados'].diff()
   pais['Fecha'] = pais.index
   pais['Dia'] = pais['Fecha'].rank()
   pais['Pais'] = clave
@@ -33,157 +34,155 @@ def crear_df(clave, pob):
 
 url_base = 'https://covidapi.info/api/v1/country/'
 opciones = [
-  {'label':u'México', 'value':'MEX'},
-  {'label':'Estados Unidos', 'value':'USA'},
-  {'label':'Argentina', 'value':'ARG'},
-  {'label':'Brasil', 'value':'BRA'},
-  {'label':'Chile', 'value':'CHL'},
-  {'label':'Colombia' , 'value':'COL'},
+  {'label':u'Argentina', 'value':'ARG'},
+  {'label':u'Brasil', 'value':'BRA'},
+  {'label':u'Chile', 'value':'CHL'},
+  {'label':u'Canadá', 'value':'CAN'},
+  {'label':u'Colombia', 'value':'COL'},
+  {'label':u'Ecuador', 'value':'ECU'},
   {'label':u'España', 'value':'ESP'},
-  {'label':'Italia', 'value':'ITA'},
-  {'label':'Reino Unido' , 'value':'GBR'}
+  {'label':u'Estados Unidos', 'value':'USA'},
+  {'label':u'Italia', 'value':'ITA'},
+  {'label':u'Japón', 'value':'JPN'},
+  {'label':u'México', 'value':'MEX'},
+  {'label':u'Reino Unido', 'value':'GBR'}
 ]
 
+
 pob = pd.read_csv('poblacion.csv')[['alfa3', 'pob_cienmiles']]
+
 
 metricas_nom = [
   'Casos', 'Muertes', 'Recuperados', 
   'Casos nuevos', 'Muertes nuevas', 'Recuperados nuevos'
 ] 
-
 metricas = [{'label':i, 'value':i} for i in metricas_nom]
 
 
 paises = pd.concat([crear_df(i['value'], pob) for  i in opciones])
-dia_min = int(paises['Dia'].min())
-dia_max = int(paises['Dia'].max())
-marcas = {i:str(i) for i in range(10, dia_max, 10)}
-marcas.update([(1, '1'), (dia_max, str(dia_max))])
 
 
 app.layout = html.Div([
-    html.Div([
-      html.H1(children='Métricas de COVID-19 ', className='titulo'),
-    ],
-    className='holder'),  
+  html.Div([
+    html.H1(children='Métricas de COVID-19 ', className='titulo'),
+  ],
+  className='holder'),  
     
+  html.Div([
     html.Div([
-      html.Div([
-        html.H4(children = 'Filtrar por país'),
-        dcc.Dropdown(
-          id='paises-drop',
-          placeholder=u'Elige un país',
-          options=opciones, 
-          value=['MEX', 'ARG', 'CHL'],
-          multi=True
-        )], 
-      className='hold-drops'
-      ),
-  
-      html.Div([
-        html.H4(children = 'Filtrar por métrica'),
-        dcc.Dropdown(
-          id='metrica-drop',
-          options=metricas,
-          value='Casos',
-        )
-      ],
-      className='hold-drops'
-      ),
-    ],
-    className='holder'
-    ),
-
-    html.Div([
-      html.H4(children=u'Dias desde el primer caso confirmado'),
-      dcc.RangeSlider(
-        id='fecha-slider',
-        min=dia_min,
-        max=dia_max,
-        value=[dia_min, dia_max],
-        step=1,
-        updatemode='drag',
-        marks=marcas,
-        className='slider'
+      html.H3(children = 'Filtrar por país'),
+      dcc.Dropdown(
+        id='paises-drop',
+        placeholder=u'Elige un país',
+        options=opciones, 
+        value=['MEX', 'ARG', 'CHL'],
+        multi=True
       )
+    ], 
+    className='hold-drops'
+    ),
+  
+    html.Div([
+      html.H3(children = 'Filtrar por métrica'),
+      dcc.Dropdown(
+        id='metrica-drop',
+        options=metricas,
+        value='Casos',
+        clearable=False
+      ),
     ],
-    className='holder'
+    className='hold-drops'
     ),
     
     html.Div([
-      dcc.Graph(id='plot-principal', className='plot'),
-      dcc.Graph(id='plot-cienmiles', className='plot')
+      html.H3('Filtrar por tipo de periodo'),
+      dcc.Dropdown(
+        id='periodo-drop',
+        options=[
+          {'label':'Días desde el primer caso', 'value':'Dia'},
+          {'label':'Fecha', 'value':'Fecha'}
+        ],
+        value='Dia',
+        clearable=False
+      ),
     ],
-    className='holder'
-    ),
-    
-    html.Div([
-      html.P('Fuente de datos: '),
-      html.A('2019 Novel Coronavirus COVID-19 (2019-nCoV) Data Repository by Johns Hopkins CSSE', 
-        href='https://github.com/CSSEGISandData/COVID-19', target='_blank'),
-      html.P(' (actualizado diariamente)'),
-      html.Br(),
-      html.P('Datos extaidos a través de '),
-      html.A('CovidAPI', href = 'https://covidapi.info/', target='_blank'),
-      html.Br(),
-      html.P('Repositorio de Github: '),
-      html.A('github/jboscomendoza/dashboard-covid-19', href='https://github.com/jboscomendoza/dashboard-covid-19', target="_blank")
-    ],
-    className='holder')
+    className='hold-drops'
+    )
     
     
+  ],
+  className='holder'
+  ),
+    
+  html.Div([
+    dcc.Graph(id='plot-principal', className='plot'),
+    dcc.Graph(id='plot-cienmiles', className='plot')
+  ],
+  className='holder'
+  ),
+    
+  html.Div([
+    dcc.Markdown(u'''
+    Fuente de datos: [2019 Novel Coronavirus COVID-19 (2019-nCoV) Data Repository by Johns Hopkins CSSE] (https://github.com/CSSEGISandData/COVID-19) (actualizado diariamente).
+    
+    Datos extraídos a través de [CovidAPI](https://covidapi.info/).
+    
+    Repositorio de Github: [jboscomendoza/dashboard-covid-19](https://github.com/jboscomendoza/dashboard-covid-19).
+    ''')
+  ],
+  className='holder'
+  )
+
   ],
   className='holder'
 )
 
 
-def crear_traces(fechas, claves, metrica, escienmiles):
+def crear_traces(claves, metrica, periodo, escienmiles):
   traces=[]
-  
-  
+
   for i in claves: 
-    paises_df = paises[paises['Dia'].between(fechas[0], fechas[1])]
-    paises_df = paises_df[paises_df['Pais'].isin([i])]
+    paises_df = paises[paises['Pais'].isin([i])]
       
     if escienmiles:
       paises_df[metrica] = paises_df[metrica] / paises_df['pob_cienmiles'].unique()
       paises_df[metrica] = round(paises_df[metrica], 2)
       nombre = i + ' por cien mil habitantes'
     
-    parte = {'x':paises_df['Dia'], 'y':paises_df[metrica], 'mode': 'lines-markers', 'name':i}
+    parte = {'x':paises_df[periodo], 'y':paises_df[metrica], 'mode': 'lines-markers', 'name':i}
     traces.append(parte)
   
   return traces
 
 
-# Plot
+# Plot total
 @app.callback(
-    Output('plot-principal', 'figure'),
+  Output('plot-principal', 'figure'),
   [
-    Input('fecha-slider', 'value'),
     Input('paises-drop', 'value'),
-    Input('metrica-drop', 'value')
+    Input('metrica-drop', 'value'),
+    Input('periodo-drop', 'value')
   ]  
 )
-def update_cliente(fechas, claves, metrica):
-  traces=crear_traces(fechas, claves, metrica, escienmiles=False)
-  cuerpo={'data': traces, 'layout':{'title': metrica + ' totales'}}
+def update_cliente(claves, metrica, periodo):
+  traces=crear_traces(claves, metrica, periodo, escienmiles=False)
+  cuerpo={'data': traces, 'layout':{'title': metrica + ' totales', 'xaxis':{'title':periodo}}}
   return cuerpo
 
 
+# Plot por cien mil
 @app.callback(
     Output('plot-cienmiles', 'figure'),
   [
-    Input('fecha-slider', 'value'),
     Input('paises-drop', 'value'),
-    Input('metrica-drop', 'value')
+    Input('metrica-drop', 'value'),
+    Input('periodo-drop', 'value')
   ]  
 )
-def update_cliente(fechas, claves, metrica):
-  traces=crear_traces(fechas, claves, metrica, escienmiles=True)
-  cuerpo={'data': traces, 'layout':{'title': metrica + ' por cien mil habitantes'}}
+def update_cliente(claves, metrica, periodo):
+  traces=crear_traces(claves, metrica, periodo, escienmiles=True)
+  cuerpo={'data': traces, 'layout':{'title': metrica + ' por cien mil habitantes', 'xaxis':{'title':periodo}}}
   return cuerpo
-
 
 
 if __name__ == '__main__':

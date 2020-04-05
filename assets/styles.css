@@ -1,22 +1,28 @@
 body {
 	font-family: Calibri, sans-serif;
-	background-color: #f6f6f6;
 }
 
 h1, h2, h3, h4 {
-	color: #446;
-	font-weight: bold;
+	color: #335;
+	font-weight:bold;
 	margin-top: 0px;
 }
 
+h3 {
+ font-size: 1.5em;
+}
+
 p, a {
-	size: 10px;
-	display:inline;
+	font-size: 12px;
 	margin-bottom: 0px;
 }
 
 a {
 	color: #55a;
+}
+
+a:hover {
+    color: #55f;
 }
 
 .titulo {
@@ -26,23 +32,29 @@ a {
 }
 
 .holder {
-	width: 100%;
-	display: inline-block;
+	max-width: 90%;
+	display: block;
 	padding: 10px;
 }
 
 .hold-drops {
-	width: 40%;
+	width: 30%;
 	display: inline-block;
-	margin-right: 10px;
-}
-
-.slider {
-	display:block;
-	width: 75%;
+	margin: 0 10px 10px 0;
 }
 
 .plot {
 	display: inline-block;
 	padding: 3px;
+    width:auto;
+}
+
+.Select--multi .Select-value {
+    color: #335;
+    background-color: #e9e9e9;
+    border-color: #ccc;
+}
+
+.Select--multi .Select-value-icon {
+    border-right-color:#ccc;
 }
