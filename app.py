@@ -23,8 +23,10 @@ def crear_df(clave, pob):
   pais = pais.rename(columns={'confirmed':'Casos', 'deaths':'Muertes', 'recovered':'Recuperados'})
   pais = pais[pais['Casos'] > 0]
   pais[['Casos nuevos', 'Muertes nuevas', 'Recuperados nuevos']] = pais[['Casos', 'Muertes', 'Recuperados']].diff()
-  # pais['Muertes nuevas'] = pais['Muertes'].diff()
-  # pais['Recuperados nuevos'] = pais['Recuperados'].diff()
+  pais['Casos nuevos']     = pais['Casos nuevos'].rolling(5).mean()
+  pais['Muertes nuevas']     = pais['Muertes nuevas'].rolling(5).mean()
+  pais.loc[pais['Recuperados nuevos'] < 0, 'Recuperados nuevos'] = 0
+  pais['Recuperados nuevos'] = pais['Recuperados nuevos'].rolling(5).mean()
   pais['Fecha'] = pais.index
   pais['Dia'] = pais['Fecha'].rank()
   pais['Pais'] = clave
@@ -52,14 +54,23 @@ opciones = [
 pob = pd.read_csv('poblacion.csv')[['alfa3', 'pob_cienmiles']]
 
 
-metricas_nom = [
-  'Casos', 'Muertes', 'Recuperados', 
-  'Casos nuevos', 'Muertes nuevas', 'Recuperados nuevos'
-] 
-metricas = [{'label':i, 'value':i} for i in metricas_nom]
+# metricas_nom = [
+#   'Casos', 'Muertes', 'Recuperados', 
+#   'Casos nuevos', 'Muertes nuevas', 'Recuperados nuevos'
+# ] 
+# metricas = [{'label':i, 'value':i} for i in metricas_nom]
+
+metricas = [
+    {'label': 'Casos', 'value': 'Casos'},
+    {'label': 'Muertes', 'value': 'Muertes'},
+    {'label': 'Recuperados', 'value': 'Recuperados'},
+    {'label': u'Casos nuevos (Promedio cinco últimos días)', 'value': 'Casos nuevos'},
+    {'label': u'Muertes nuevas (Promedio cinco últimos días)', 'value': 'Muertes nuevas'},
+    {'label': u'Recuperados nuevos (Promedio cinco últimos días)', 'value': 'Recuperados nuevos'},
+]
 
 
-paises = pd.concat([crear_df(i['value'], pob) for  i in opciones])
+paises = pd.concat([crear_df(i['value'], pob) for i in opciones])
 
 
 app.layout = html.Div([
@@ -102,7 +113,7 @@ app.layout = html.Div([
           {'label':'Días desde el primer caso', 'value':'Dia'},
           {'label':'Fecha', 'value':'Fecha'}
         ],
-        value='Dia',
+        value='Fecha',
         clearable=False
       ),
     ],
