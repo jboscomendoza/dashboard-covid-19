@@ -9,7 +9,7 @@ dash-renderer==1.9.1
 dash-table==4.11.3
 flask>=2.2.5
 Flask-Compress==1.4.0
-future==0.18.2
+future==0.18.3
 gunicorn==20.1.0
 idna==2.9
 itsdangerous==2.0.1
