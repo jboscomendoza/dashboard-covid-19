@@ -39,7 +39,7 @@ tenacity==9.0.0
 typing_extensions==4.12.2
 tzdata==2025.1
 url-normalize==1.4.3
-urllib3==2.3.0
+urllib3==2.5.0
 Werkzeug==3.0.6
 wheel==0.45.1
 zipp==3.21.0
