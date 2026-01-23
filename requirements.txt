@@ -41,5 +41,5 @@ tzdata==2025.2
 url-normalize==2.2.1
 urllib3==2.6.3
 Werkzeug==3.1.5
-wheel==0.45.1
+wheel==0.46.2
 zipp==3.23.0
