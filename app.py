@@ -22,9 +22,9 @@ def crear_df(clave, pob):
   pais = pd.DataFrame.from_dict(pais_json['result'], orient='index')
   pais = pais.rename(columns={'confirmed':'Casos', 'deaths':'Muertes', 'recovered':'Recuperados'})
   pais = pais[pais['Casos'] > 0]
-  pais[['Casos nuevos', 'Muertes nuevas', 'Recuperados nuevos']] = pais[['Casos', 'Muertes', 'Recuperados']].diff()
+  pais[['Casos nuevos', 'Muertes nuevos', 'Recuperados nuevos']] = pais[['Casos', 'Muertes', 'Recuperados']].diff()
   pais['Casos nuevos']     = pais['Casos nuevos'].rolling(5).mean()
-  pais['Muertes nuevas']     = pais['Muertes nuevas'].rolling(5).mean()
+  pais['Muertes nuevos']     = pais['Muertes nuevos'].rolling(5).mean()
   pais.loc[pais['Recuperados nuevos'] < 0, 'Recuperados nuevos'] = 0
   pais['Recuperados nuevos'] = pais['Recuperados nuevos'].rolling(5).mean()
   pais['Fecha'] = pais.index
@@ -61,12 +61,14 @@ pob = pd.read_csv('poblacion.csv')[['alfa3', 'pob_cienmiles']]
 # metricas = [{'label':i, 'value':i} for i in metricas_nom]
 
 metricas = [
-    {'label': 'Casos', 'value': 'Casos'},
-    {'label': 'Muertes', 'value': 'Muertes'},
-    {'label': 'Recuperados', 'value': 'Recuperados'},
-    {'label': u'Casos nuevos (Promedio cinco últimos días)', 'value': 'Casos nuevos'},
-    {'label': u'Muertes nuevas (Promedio cinco últimos días)', 'value': 'Muertes nuevas'},
-    {'label': u'Recuperados nuevos (Promedio cinco últimos días)', 'value': 'Recuperados nuevos'},
+    {'label': u'Nuevos (Promedio últimos cinco días)', 'value': ' nuevos'},
+    {'label': 'Acumulados', 'value': ''},
+#    {'label': 'Casos', 'value': 'Casos'},
+#    {'label': 'Muertes', 'value': 'Muertes'},
+#    {'label': 'Recuperados', 'value': 'Recuperados'},
+#    {'label': u'Casos nuevos (Promedio cinco últimos días)', 'value': 'Casos nuevos'},
+#    {'label': u'Muertes nuevas (Promedio cinco últimos días)', 'value': 'Muertes nuevas'},
+#    {'label': u'Recuperados nuevos (Promedio cinco últimos días)', 'value': 'Recuperados nuevos'},
 ]
 
 
@@ -94,11 +96,11 @@ app.layout = html.Div([
     ),
   
     html.Div([
-      html.H3(children = 'Filtrar por métrica'),
+      html.H3(children = 'Tipo de conteo'),
       dcc.Dropdown(
         id='metrica-drop',
         options=metricas,
-        value='Casos',
+        value=' nuevos',
         clearable=False
       ),
     ],
@@ -126,12 +128,19 @@ app.layout = html.Div([
   ),
     
   html.Div([
-    dcc.Graph(id='plot-principal', className='plot'),
-    dcc.Graph(id='plot-cienmiles', className='plot')
+    dcc.Graph(id='plot-casos', className='plot'),
+    dcc.Graph(id='plot-casos-cienmiles', className='plot')
   ],
   className='holder'
   ),
-    
+  
+  html.Div([
+    dcc.Graph(id='plot-muertes', className='plot'),
+    dcc.Graph(id='plot-muertes-cienmiles', className='plot')
+  ],
+  className='holder'
+  ),
+
   html.Div([
     dcc.Markdown(u'''
     Fuente de datos: [2019 Novel Coronavirus COVID-19 (2019-nCoV) Data Repository by Johns Hopkins CSSE] (https://github.com/CSSEGISandData/COVID-19) (actualizado diariamente).
@@ -158,7 +167,6 @@ def crear_traces(claves, metrica, periodo, escienmiles):
     if escienmiles:
       paises_df[metrica] = paises_df[metrica] / paises_df['pob_cienmiles'].unique()
       paises_df[metrica] = round(paises_df[metrica], 2)
-      nombre = i + ' por cien mil habitantes'
     
     parte = {'x':paises_df[periodo], 'y':paises_df[metrica], 'mode': 'lines-markers', 'name':i}
     traces.append(parte)
@@ -166,35 +174,34 @@ def crear_traces(claves, metrica, periodo, escienmiles):
   return traces
 
 
-# Plot total
+# Plots
 @app.callback(
-  Output('plot-principal', 'figure'),
+    Output('plot-casos', 'figure'),
+    Output('plot-casos-cienmiles', 'figure'),
+    Output('plot-muertes', 'figure'),
+    Output('plot-muertes-cienmiles', 'figure'),
   [
     Input('paises-drop', 'value'),
     Input('metrica-drop', 'value'),
     Input('periodo-drop', 'value')
   ]  
 )
-def update_cliente(claves, metrica, periodo):
-  traces=crear_traces(claves, metrica, periodo, escienmiles=False)
-  cuerpo={'data': traces, 'layout':{'title': metrica + ' totales', 'xaxis':{'title':periodo}}}
-  return cuerpo
+def update_cliente(claves, tipo, periodo):
+  metricas = [i + tipo for i in ['Casos', 'Muertes']]
+  cuerpos = []
 
+  for i in metricas:
+    traces=crear_traces(claves, i, periodo, escienmiles=False)
+    cuerpo={'data': traces, 'layout':{'title': i, 'xaxis':{'title':periodo}}}
 
-# Plot por cien mil
-@app.callback(
-    Output('plot-cienmiles', 'figure'),
-  [
-    Input('paises-drop', 'value'),
-    Input('metrica-drop', 'value'),
-    Input('periodo-drop', 'value')
-  ]  
-)
-def update_cliente(claves, metrica, periodo):
-  traces=crear_traces(claves, metrica, periodo, escienmiles=True)
-  cuerpo={'data': traces, 'layout':{'title': metrica + ' por cien mil habitantes', 'xaxis':{'title':periodo}}}
-  return cuerpo
+    traces_cienmiles=crear_traces(claves, i, periodo, escienmiles=True)
+    cuerpo_cienmiles={'data': traces_cienmiles, 'layout':{'title': i + ' por cien mil habitantes', 'xaxis':{'title':periodo}}}
+    
+    cuerpos.append(cuerpo)
+    cuerpos.append(cuerpo_cienmiles)
+
+  return cuerpos
 
 
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server(debug=False)
